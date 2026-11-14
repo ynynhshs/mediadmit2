@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "mongodb.mongodb-vscode",
+    "digitalbrainstem.javascript-ejs-support",
+    "esbenp.prettier-vscode"
+  ]
+}

@@ -1,0 +1,90 @@
+<%- include('partials/top') %>
+<%
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const triageTotal = triage.reduce((t, x) => t + x.n, 0);
+  const TCOL = { 'Emergency': '#ef4444', 'Urgent': '#f59e0b', 'Non-Urgent': '#22c55e' };
+%>
+<div class="head">
+  <div><div class="crumb"><%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) %></div>
+    <h1><%= greet %>, <%= currentUser.firstName %> 👋</h1></div>
+  <form class="acts" action="/patients" method="get">
+    <input class="search" name="q" placeholder="Search patient name or ID…" style="width:300px">
+    <% if (can('assessPatients')) { %><a class="btn ghost" href="/assessments/new">Assess Patient</a><% } %>
+    <% if (can('admitDischarge')) { %><a class="btn ghost" href="/admissions/new">Admit Patient</a><% } %>
+    <% if (can('registerPatients')) { %><a class="btn pri" href="/patients/register">+ Register Patient</a><% } %>
+  </form>
+</div>
+
+<% if (can('manageUsers') && !(setup.patients && setup.assessments && setup.admissions && setup.staff)) { %>
+<div class="card">
+  <h3>Getting started <span class="sub">Your database is empty — follow these steps</span></h3>
+  <div class="start">
+    <a class="<%= setup.patients ? 'done' : '' %>" href="/patients/register"><i><%= setup.patients ? '✓' : '1' %></i><div><b>Register a patient</b>Fill in the 4-step form. A Patient ID is created automatically.</div></a>
+    <a class="<%= setup.assessments ? 'done' : '' %>" href="/assessments/new"><i><%= setup.assessments ? '✓' : '2' %></i><div><b>Assess the patient</b>Record the complaint, vital signs, triage level and recommendation.</div></a>
+    <a class="<%= setup.admissions ? 'done' : '' %>" href="/admissions/new"><i><%= setup.admissions ? '✓' : '3' %></i><div><b>Admit the patient</b>For patients recommended for admission.</div></a>
+    <a class="<%= setup.staff ? 'done' : '' %>" href="/users"><i><%= setup.staff ? '✓' : '4' %></i><div><b>Add your staff</b>On Users → “+ Add User”, or approve staff who sign up.</div></a>
+  </div>
+</div>
+<% } %>
+
+<div class="row">
+  <a class="card stat" href="/patients" title="View patients"><%- fmt.icon('#eef0ff','#4f46e5','user') %><div><div class="l">Registered Today</div><div class="n"><%= stats.registeredToday %></div>
+    <% if (stats.pct === null) { %><div class="nt">No data for yesterday</div><% } else { %><div class="<%= stats.pct >= 0 ? 'up' : 'dn' %>"><%= stats.pct >= 0 ? '▲' : '▼' %> <%= Math.abs(stats.pct) %>% vs yesterday</div><% } %></div></a>
+  <a class="card stat" href="/admissions" title="View admissions"><%- fmt.icon('#e0f2fe','#0284c7','plus') %><div><div class="l">New Admissions</div><div class="n"><%= stats.admittedToday %></div><div class="nt"><%= stats.currentlyAdmitted %> currently admitted</div></div></a>
+  <a class="card stat" href="/assessments" title="View assessments"><%- fmt.icon('#fee2e2','#dc2626','pulse') %><div><div class="l">Assessed Today</div><div class="n"><%= stats.assessedToday %></div><div class="<%= stats.emergencyToday ? 'dn' : 'nt' %>"><%= stats.emergencyToday %> emergency case<%= stats.emergencyToday === 1 ? '' : 's' %></div></div></a>
+  <a class="card stat" href="/admissions?status=Discharged" title="View discharged patients"><%- fmt.icon('#fef3c7','#d97706','out') %><div><div class="l">Discharged Today</div><div class="n"><%= stats.dischargedToday %></div><div class="nt">Patients sent home</div></div></a>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.5">
+    <h3>Patient Flow <span class="lg"><span><i style="background:#c7c4ff"></i>Registrations</span><span><i style="background:#f59e0b"></i>Assessments</span><span><i style="background:#4f46e5"></i>Admissions</span><span class="sub">Last 7 days</span></span></h3>
+    <div class="chart">
+      <% days.forEach(d => { %>
+        <div class="c"><div class="pair">
+          <span title="<%= d.registrations %> registrations" <%- fmt.style(`height:${d.registrations / maxDay * 100}%`) %>></span>
+          <span title="<%= d.assessments %> assessments" <%- fmt.style(`height:${d.assessments / maxDay * 100}%;background:#f59e0b`) %>></span>
+          <span class="a2" title="<%= d.admissions %> admissions" <%- fmt.style(`height:${d.admissions / maxDay * 100}%`) %>></span>
+        </div><%= d.label %></div>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="card" style="flex:1">
+    <h3>Today's Triage <a class="link" href="/assessments">Assessments →</a></h3>
+    <% triage.forEach(t => { const p = triageTotal ? t.n / triageTotal : 0; %>
+      <a class="wd" href="/assessments?triage=<%= encodeURIComponent(t.level) %>"><div class="t"><span><%= t.level %></span><b><%= t.n %></b></div>
+        <div class="bar"><i <%- fmt.style(`width:${Math.round(p * 100)}%;background:${TCOL[t.level]}`) %>></i></div></a>
+    <% }) %>
+    <div style="margin-top:18px;font-size:13px;font-weight:700">Recent Assessments</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;font-size:13px">
+      <% recentAssessments.forEach(a => { %>
+        <a class="who" href="/assessments/<%= a._id %>"><div class="av"><%= a.patient.initials %></div><div><%= a.patient.fullName %><small><%= a.chiefComplaint %> · <%= fmt.isToday(a.assessedAt) ? fmt.time(a.assessedAt) : fmt.dateTime(a.assessedAt) %></small></div>
+          <span class="tag <%= fmt.tagClass(a.triageLevel) %>" style="margin-left:auto"><%= a.triageLevel %></span></a>
+      <% }) %>
+      <% if (!recentAssessments.length) { %><div class="empty">No assessments yet.<% if (can('assessPatients')) { %><br><a class="a" href="/assessments/new">Assess a patient →</a><% } %></div><% } %>
+    </div>
+  </div>
+
+  <div class="col" style="width:300px">
+    <div class="card"><h3>Quick Actions</h3>
+      <div class="qa">
+        <% if (can('registerPatients')) { %><a href="/patients/register"><i style="background:#eef0ff;color:#4f46e5">＋</i>New Patient</a><% } %>
+        <% if (can('admitDischarge')) { %><a href="/admissions/new"><i style="background:#e0f2fe;color:#0284c7">⇥</i>Admit</a><% } %>
+        <% if (can('assessPatients')) { %><a href="/assessments/new"><i style="background:#fee2e2;color:#dc2626">♥</i>Assess</a><% } %>
+        <% if (can('generateReports')) { %><a href="/reports"><i style="background:#fef3c7;color:#d97706">⎙</i>Reports</a><% } else { %><a href="/patients"><i style="background:#fef3c7;color:#d97706">☰</i>Patients</a><% } %>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <h3>Awaiting Admission <small><%= waiting.length %></small></h3>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px">
+        <% waiting.forEach(a => { %>
+          <a class="who" href="<%= can('admitDischarge') ? `/admissions/new?patient=${a.patient._id}&assessment=${a._id}` : `/assessments/${a._id}` %>" title="Admit this patient"><div class="av" style="background:#fef3c7;color:#a16207"><%= a.patient.initials %></div>
+            <div><%= a.patient.fullName %><small><%= a.impression %> · <%= a.triageLevel %></small></div></a>
+        <% }) %>
+        <% if (!waiting.length) { %><div class="sub">No assessed patients are waiting for admission.</div><% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/bottom') %>

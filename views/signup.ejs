@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign Up · MediAdmit</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="auth">
+<%- include('partials/hero', { heroTitle: 'Join your hospital\'s<br>admitting team.', heroText: 'Create a staff account. An administrator will review your request and assign your user privileges before you can sign in.' }) %>
+<section class="formside">
+  <div class="box wide">
+    <h1>Create account</h1>
+    <div class="sub">Fill in your staff details to request access</div>
+    <form class="fs" method="post" action="/signup">
+      <% if (error) { %><div class="flash err"><%= error %></div><% } %>
+      <div class="grid2">
+        <div class="f"><label>First Name</label><input name="firstName" value="<%= form.firstName || '' %>" required></div>
+        <div class="f"><label>Last Name</label><input name="lastName" value="<%= form.lastName || '' %>" required></div>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>Employee ID</label><input name="employeeId" value="<%= form.employeeId || '' %>" placeholder="EMP-2026-0000" required></div>
+        <div class="f"><label>Role</label>
+          <select name="role" required>
+            <% roles.forEach(r => { %><option <%= form.role === r ? 'selected' : '' %>><%= r %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="f"><label>Work Email</label><input name="email" type="email" value="<%= form.email || '' %>" required></div>
+      <div class="grid2">
+        <div class="f"><label>Password</label><input name="password" type="password" minlength="8" required></div>
+        <div class="f"><label>Confirm Password</label><input name="confirmPassword" type="password" minlength="8" required></div>
+      </div>
+      <div class="chk"><label><input type="checkbox" name="agree" required>I agree to the <a class="a" href="/privacy" target="_blank">Data Privacy Policy</a> (RA 10173)</label></div>
+      <button class="btn pri big" type="submit">Submit for Approval</button>
+      <div class="alt">Already have an account? <a class="a" href="/login">Sign in</a></div>
+    </form>
+  </div>
+</section>
+</body>
+</html>

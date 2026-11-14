@@ -1,0 +1,128 @@
+<%- include('../partials/top') %>
+<%
+  const A = assessment || {};
+  const get = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), A);
+  const v = (name, path) => {
+    if (form[name] !== undefined) return form[name];
+    const x = get(path || name);
+    return x == null ? '' : x;
+  };
+  const sel = (name, path, val) => String(v(name, path)) === String(val) ? 'selected' : '';
+  const isEdit = !!assessment;
+%>
+<form method="post" action="<%= isEdit ? `/assessments/${assessment._id}/edit` : '/assessments/new' %>" style="display:flex;flex-direction:column;gap:18px">
+<div class="head">
+  <div><div class="crumb">Assessments › <%= isEdit ? 'Edit Assessment' : 'New Assessment' %></div>
+    <h1><%= isEdit ? 'Edit Patient Assessment' : 'Assess Patient' %></h1></div>
+  <div class="pidbox">Assessment No.<b><%= isEdit ? assessment.assessmentNo : 'Auto-generated on save' %></b></div>
+</div>
+<% if (error) { %><div class="flash err"><%= error %></div><% } %>
+
+<div class="row" style="align-items:flex-start">
+  <div style="flex:1;display:flex;flex-direction:column;gap:18px;min-width:0">
+
+    <div class="card">
+      <div class="sec">Patient</div>
+      <% if (isEdit) { %>
+        <div class="who"><div class="av"><%= patient.initials %></div><div><b><%= patient.fullName %></b><small><%= patient.patientId %> · <%= patient.sex %>, <%= patient.age %></small></div></div>
+      <% } else { %>
+        <div class="f"><label>Patient <em>*</em></label>
+          <select name="patient" required onchange="location='/assessments/new?patient='+this.value">
+            <option value="">Select a registered patient…</option>
+            <% patients.forEach(p => { %><option value="<%= p._id %>" <%= String(p._id) === selectedPatient ? 'selected' : '' %>><%= p.patientId %> — <%= p.fullName %> (<%= p.sex[0] %>, <%= p.age %>)</option><% }) %>
+          </select>
+          <% if (!patients.length) { %><div class="flash err" style="margin-top:8px">No patients yet. <a class="a" href="/patients/register">Register a patient first →</a></div><% } %>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <div class="sec">1 · Chief Complaint and History</div>
+      <div class="grid4" style="margin-bottom:0">
+        <div class="f s4"><label>Chief Complaint <em>*</em></label><input name="chiefComplaint" value="<%= v('chiefComplaint') %>" placeholder="e.g. Fever and cough for 3 days" required></div>
+        <div class="f s4"><label>History of Present Illness</label><textarea name="historyOfIllness" rows="3" placeholder="When it started, how it progressed, other symptoms…"><%= v('historyOfIllness') %></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">2 · Vital Signs</div>
+      <div class="grid4" style="margin-bottom:0">
+        <div class="f"><label>Blood Pressure (mmHg)</label>
+          <div style="display:flex;gap:6px;align-items:center"><input type="number" name="bpSystolic" value="<%= v('bpSystolic', 'vitals.bpSystolic') %>" placeholder="120" min="40" max="300"><b>/</b><input type="number" name="bpDiastolic" value="<%= v('bpDiastolic', 'vitals.bpDiastolic') %>" placeholder="80" min="20" max="200"></div></div>
+        <div class="f"><label>Heart Rate (bpm)</label><input type="number" name="heartRate" value="<%= v('heartRate', 'vitals.heartRate') %>" placeholder="60–100" min="20" max="250"></div>
+        <div class="f"><label>Respiratory Rate (/min)</label><input type="number" name="respiratoryRate" value="<%= v('respiratoryRate', 'vitals.respiratoryRate') %>" placeholder="12–20" min="4" max="80"></div>
+        <div class="f"><label>Temperature (°C)</label><input type="number" step="0.1" name="temperature" value="<%= v('temperature', 'vitals.temperature') %>" placeholder="36.5" min="30" max="45"></div>
+        <div class="f"><label>Oxygen Saturation (%)</label><input type="number" name="spo2" value="<%= v('spo2', 'vitals.spo2') %>" placeholder="95–100" min="50" max="100"></div>
+        <div class="f"><label>Weight (kg)</label><input type="number" step="0.1" name="weightKg" value="<%= v('weightKg', 'vitals.weightKg') %>" min="1" max="400"></div>
+        <div class="f"><label>Height (cm)</label><input type="number" name="heightCm" value="<%= v('heightCm', 'vitals.heightCm') %>" min="20" max="250"></div>
+        <div class="f"><label>Pain Score (0–10)</label>
+          <select name="painScore"><option value="">Not assessed</option><% for (let i = 0; i <= 10; i++) { %><option <%= sel('painScore', 'painScore', i) %>><%= i %></option><% } %></select></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">3 · Physical Assessment</div>
+      <div class="grid4" style="margin-bottom:0">
+        <div class="f"><label>Level of Consciousness</label>
+          <select name="consciousness"><% CONSCIOUSNESS.forEach(c => { %><option <%= sel('consciousness', 'consciousness', c) %>><%= c %></option><% }) %></select></div>
+        <div class="f s4"><label>Physical Examination Findings</label><textarea name="physicalExam" rows="3" placeholder="e.g. Crackles on both lungs, no edema"><%= v('physicalExam') %></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">4 · Assessment and Recommendation</div>
+      <div class="grid4" style="margin-bottom:0">
+        <div class="f s2"><label>Triage Level <em>*</em></label>
+          <select name="triageLevel" required><option value="">Select…</option><% TRIAGE.forEach(t => { %><option <%= sel('triageLevel', 'triageLevel', t) %>><%= t %></option><% }) %></select></div>
+        <div class="f s2"><label>Recommendation <em>*</em></label>
+          <select name="recommendation" required><option value="">Select…</option><% RECOMMENDATIONS.forEach(r => { %><option <%= sel('recommendation', 'recommendation', r) %>><%= r %></option><% }) %></select></div>
+        <div class="f s4"><label>Initial Impression / Diagnosis <em>*</em></label><input name="impression" value="<%= v('impression') %>" placeholder="e.g. Community-acquired pneumonia" required></div>
+        <div class="f s4"><label>Plan / Orders</label><textarea name="plan" rows="2" placeholder="e.g. Chest X-ray, CBC; start oxygen"><%= v('plan') %></textarea></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:12px">
+      <a class="btn ghost" href="<%= isEdit ? `/assessments/${assessment._id}` : '/assessments' %>">Cancel</a>
+      <% if (isEdit) { %><button class="btn pri" type="submit">Save Changes</button>
+      <% } else { %>
+        <button class="btn ghost" type="submit" name="next" value="view">Save Assessment</button>
+        <% if (can('admitDischarge')) { %><button class="btn pri" type="submit" name="next" value="admit" title="Save, then open the admission form">Save &amp; Admit Patient</button><% } %>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="col" style="width:320px">
+    <div class="card">
+      <h3>Patient Summary</h3>
+      <% if (!patient) { %><div class="sub">Select a patient to see their details.</div>
+      <% } else { const p = patient; %>
+        <div class="kv">
+          <div>Patient ID<b><%= p.patientId %></b></div><div>Age / Sex<b><%= p.age %> · <%= p.sex %></b></div>
+          <div>Blood Type<b><%= p.medical.bloodType || '—' %></b></div><div>Status<b><%= p.status %></b></div>
+        </div>
+        <div style="margin:16px 0 8px;font-size:13px;font-weight:700">Allergies &amp; Conditions</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <% (p.medical.allergies || '').split(',').map(s => s.trim()).filter(Boolean).forEach(x => { %><span class="tag r">Allergy: <%= x %></span><% }) %>
+          <% if (p.medical.conditions) { %><span class="tag y"><%= p.medical.conditions %></span><% } %>
+          <% if (!p.medical.allergies && !p.medical.conditions) { %><span class="sub">None recorded</span><% } %>
+        </div>
+      <% } %>
+    </div>
+    <% if (last) { %>
+    <div class="card">
+      <h3>Previous Assessment <a class="link" href="/assessments/<%= last._id %>">Open</a></h3>
+      <div class="sub" style="margin-bottom:8px"><%= fmt.dateTime(last.assessedAt) %> · <span class="tag <%= fmt.tagClass(last.triageLevel) %>"><%= last.triageLevel %></span></div>
+      <div style="font-size:13px"><b><%= last.chiefComplaint %></b><br><span class="sub"><%= last.impression %></span></div>
+    </div>
+    <% } %>
+    <div class="card"><h3>Normal Adult Ranges</h3>
+      <div class="kv" style="grid-template-columns:1fr">
+        <div>Blood pressure<b>90/60 – 139/89 mmHg</b></div><div>Heart rate<b>60 – 100 bpm</b></div>
+        <div>Respiratory rate<b>12 – 20 /min</b></div><div>Temperature<b>36.0 – 37.4 °C</b></div><div>Oxygen saturation<b>95 – 100 %</b></div>
+      </div>
+      <div class="sub" style="margin-top:10px">Values outside these ranges are shown in red on the assessment record.</div>
+    </div>
+  </div>
+</div>
+</form>
+<%- include('../partials/bottom') %>

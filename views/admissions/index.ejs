@@ -1,0 +1,69 @@
+<%- include('../partials/top') %>
+<%
+  const qs = (extra) => {
+    const p = new URLSearchParams({ status, physician, ...extra });
+    for (const [k, v] of [...p]) if (!v) p.delete(k);
+    const s = p.toString();
+    return s ? '?' + s : '?';
+  };
+%>
+<div class="head">
+  <div><div class="crumb">Admission Management</div><h1>Admissions</h1></div>
+  <div class="acts">
+    <% if (can('generateReports')) { %><a class="btn ghost" href="/reports?type=admissions">Print List</a><% } %>
+    <% if (can('admitDischarge')) { %><a class="btn pri" href="/admissions/new">+ New Admission</a><% } %>
+  </div>
+</div>
+
+<div class="row">
+  <a class="card stat" href="?status=Admitted"><%- fmt.icon('#dcfce7','#16a34a','bed') %><div><div class="l">Currently Admitted</div><div class="n"><%= stats.currentlyAdmitted %></div><div class="nt">Patients in the hospital now</div></div></a>
+  <a class="card stat" href="?status=Discharged"><%- fmt.icon('#fef3c7','#d97706','out') %><div><div class="l">Discharged This Month</div><div class="n"><%= stats.dischargedThisMonth %></div><div class="nt"><%= new Date().toLocaleDateString('en-US', { month: 'long' }) %></div></div></a>
+  <a class="card stat" href="/admissions"><%- fmt.icon('#e0e7ff','#4338ca','plus') %><div><div class="l">Admitted This Month</div><div class="n"><%= stats.thisMonth %></div><div class="nt"><%= new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) %></div></div></a>
+  <a class="card stat" href="?status=Discharged"><%- fmt.icon('#f1f2f7','#5b6085','out') %><div><div class="l">Avg. Length of Stay</div><div class="n"><%= stats.avgStay %><%= stats.avgStay !== '—' ? ' days' : '' %></div><div class="nt">Discharged patients</div></div></a>
+</div>
+
+<div class="card">
+  <form class="filters" method="get">
+    <div class="seg">
+      <a class="<%= !status ? 'on' : '' %>" href="<%= qs({ status: '' }) %>">All</a>
+      <% statuses.forEach(s => { %><a class="<%= status === s ? 'on' : '' %>" href="<%= qs({ status: s }) %>"><%= s %></a><% }) %>
+    </div>
+    <input type="hidden" name="status" value="<%= status %>">
+    <select class="drop" name="physician" data-autosubmit>
+      <option value="">Physician: All</option>
+      <% physicians.forEach(ph => { %><option <%= physician === ph ? 'selected' : '' %>><%= ph %></option><% }) %>
+    </select>
+  </form>
+
+  <div class="tablewrap"><table>
+    <tr><th>Admission No.</th><th>Patient</th><th>Admitting Physician</th><th>Reason for Admission</th><th>Assessment</th><th>Date &amp; Time</th><th>Status</th><th></th></tr>
+    <% admissions.forEach(a => { const p = a.patient; %>
+      <tr data-href="/patients/<%= p._id %>/history" title="Open admission history">
+        <td class="mono"><%= a.admissionNo %></td>
+        <td><a class="who" href="/patients?id=<%= p._id %>"><div class="av"><%= p.initials %></div><div><%= p.fullName %><small><%= p.patientId %></small></div></a></td>
+        <td><%= a.physician %></td>
+        <td><%= a.reason %></td>
+        <td><% if (a.assessment) { %><a class="a mono" href="/assessments/<%= a.assessment._id %>"><%= a.assessment.assessmentNo %></a> <span class="tag <%= fmt.tagClass(a.assessment.triageLevel) %>"><%= a.assessment.triageLevel %></span><% } else { %>—<% } %></td>
+        <td><%= fmt.dateTime(a.admittedAt) %></td>
+        <td><span class="tag <%= fmt.tagClass(a.status) %>"><%= a.status %></span></td>
+        <td style="text-align:right">
+          <% if (a.status !== 'Discharged' && can('admitDischarge')) { %>
+            <form method="post" action="/admissions/<%= a._id %>/discharge" style="display:inline" data-confirm="Discharge <%= p.fullName %>?">
+              <button class="btn danger sm" type="submit">Discharge</button></form>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+  </table></div>
+  <% if (!admissions.length) { %><div class="empty">No admissions found.</div><% } %>
+
+  <div class="pag">
+    <span>Showing <%= total ? (page - 1) * 10 + 1 : 0 %>–<%= Math.min(page * 10, total) %> of <%= total %> admissions</span>
+    <div class="pg">
+      <% if (page > 1) { %><a href="<%= qs({ page: page - 1 }) %>">‹</a><% } %>
+      <% for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) { %><a class="<%= i === page ? 'on' : '' %>" href="<%= qs({ page: i }) %>"><%= i %></a><% } %>
+      <% if (page < pages) { %><a href="<%= qs({ page: page + 1 }) %>">›</a><% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

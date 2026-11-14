@@ -1,0 +1,101 @@
+<%- include('partials/top') %>
+<%
+  const qs = (extra) => {
+    const p = new URLSearchParams({ status, role, q, ...extra });
+    for (const [k, v] of [...p]) if (!v) p.delete(k);
+    return '?' + p.toString();
+  };
+  const statusLabel = (s) => s === 'Pending' ? 'Pending Approval' : s;
+%>
+<div class="head">
+  <div><div class="crumb">Users Management</div><h1>Users</h1></div>
+  <div class="acts"><button class="btn pri" onclick="document.getElementById('addDlg').showModal()">+ Add User</button></div>
+</div>
+
+<% if (tempPassword) { %>
+  <div class="flash ok">Temporary password for <b><%= tempPassword.name %></b>: <span class="mono"><%= tempPassword.password %></span> — give it to the user and ask them to sign in. (It will not be shown again.)</div>
+<% } %>
+
+<div class="row">
+  <div class="card" style="flex:1;min-width:0">
+    <form class="filters" method="get">
+      <div class="seg">
+        <a class="<%= !status ? 'on' : '' %>" href="<%= qs({ status: '' }) %>">All (<%= counts.all %>)</a>
+        <a class="<%= status === 'Active' ? 'on' : '' %>" href="<%= qs({ status: 'Active' }) %>">Active</a>
+        <a class="<%= status === 'Pending' ? 'on' : '' %>" href="<%= qs({ status: 'Pending' }) %>">Pending (<%= counts.pending %>)</a>
+        <a class="<%= status === 'Deactivated' ? 'on' : '' %>" href="<%= qs({ status: 'Deactivated' }) %>">Deactivated</a>
+      </div>
+      <input type="hidden" name="status" value="<%= status %>">
+      <input class="search" name="q" value="<%= q %>" placeholder="Search name, email or employee ID…">
+      <select class="drop" name="role" data-autosubmit><option value="">Role: All</option>
+        <% ROLES.forEach(r => { %><option <%= role === r ? 'selected' : '' %>><%= r %></option><% }) %></select>
+    </form>
+
+    <div class="tablewrap"><table>
+      <tr><th>User</th><th>Employee ID</th><th>Role</th><th>Last Login</th><th>Status</th></tr>
+      <% users.forEach(u => { %>
+        <tr data-href="<%= qs({ id: u._id }) %>" class="<%= selected && selected._id.equals(u._id) ? 'sel' : '' %>">
+          <td><div class="who"><div class="av"><%= u.initials %></div><div><%= u.fullName %><small><%= u.email %></small></div></div></td>
+          <td class="mono"><%= u.employeeId %></td>
+          <td><span class="tag <%= u.role === 'Administrator' ? 'b' : 's' %>"><%= u.role %></span></td>
+          <td><%= fmt.lastLogin(u.lastLogin) %></td>
+          <td><span class="tag <%= fmt.tagClass(u.status) %>"><%= statusLabel(u.status) %></span></td>
+        </tr>
+      <% }) %>
+    </table></div>
+    <% if (!users.length) { %><div class="empty">No users found.</div><% } %>
+
+    <% resetRequests.forEach(u => { %>
+      <div class="warnbox" style="margin-top:14px;background:#eef2ff;border-color:#c7d2fe;color:#3730a3"><b>Password reset request</b> — <%= u.fullName %> (<%= u.email %>) · <%= fmt.dateTime(u.resetRequestedAt) %>
+        <form method="post" action="/users/<%= u._id %>/reset-password" style="margin-left:auto"><button class="btn pri sm">Create temporary password</button></form>
+      </div>
+    <% }) %>
+    <% pendingUsers.forEach(u => { %>
+      <div class="warnbox" style="margin-top:14px"><b>Sign-up request</b> waiting for approval — <%= u.fullName %> (<%= u.role %>, <%= u.employeeId %>)
+        <form method="post" action="/users/<%= u._id %>/reject" style="margin-left:auto"><button class="btn ghost sm">Reject</button></form>
+        <form method="post" action="/users/<%= u._id %>/approve"><button class="btn pri sm">Approve</button></form>
+      </div>
+    <% }) %>
+  </div>
+
+  <% if (selected) { const u = selected; const me = u._id.equals(currentUser._id); %>
+  <form class="card" style="width:360px" method="post" action="/users/<%= u._id %>/privileges">
+    <h3>User Privileges <span class="tag <%= fmt.tagClass(u.status) %>"><%= statusLabel(u.status) %></span></h3>
+    <div class="who" style="margin-bottom:14px"><div class="av"><%= u.initials %></div><div><%= u.fullName %><small><%= u.email %></small></div></div>
+    <div class="f" style="margin-bottom:6px"><label>Role</label>
+      <select name="role"><% ROLES.forEach(r => { %><option <%= u.role === r ? 'selected' : '' %>><%= r %></option><% }) %></select></div>
+    <% if (!me && u.status !== 'Pending') { %>
+      <div class="f" style="margin:10px 0 6px"><label>Account Status</label>
+        <select name="status"><option <%= u.status === 'Active' ? 'selected' : '' %>>Active</option><option <%= u.status === 'Deactivated' ? 'selected' : '' %>>Deactivated</option></select></div>
+    <% } %>
+    <% Object.entries(PERMISSIONS).forEach(([key, label]) => { const lock = me && key === 'manageUsers'; %>
+      <div class="pr"><span><%= label %><%= lock ? ' (your account)' : '' %></span>
+        <label class="sw"><input type="checkbox" name="<%= key %>" <%= u.permissions[key] ? 'checked' : '' %> <%= lock ? 'disabled' : '' %>><span></span></label></div>
+    <% }) %>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn ghost" style="flex:1" type="submit" formaction="/users/<%= u._id %>/reset-password" formnovalidate>Reset Password</button>
+      <button class="btn pri" style="flex:1" type="submit">Save Changes</button>
+    </div>
+    <% if (u.status === 'Pending') { %><div class="sub" style="margin-top:10px">Approving this account gives the default privileges for its role.</div><% } %>
+  </form>
+  <% } %>
+</div>
+
+<dialog id="addDlg">
+  <form method="post" action="/users/add" class="fs">
+    <h3 style="font-size:18px">Add User</h3>
+    <div class="grid2">
+      <div class="f"><label>First Name</label><input name="firstName" required></div>
+      <div class="f"><label>Last Name</label><input name="lastName" required></div>
+      <div class="f"><label>Employee ID</label><input name="employeeId" required></div>
+      <div class="f"><label>Role</label><select name="role"><% ROLES.forEach(r => { %><option><%= r %></option><% }) %></select></div>
+    </div>
+    <div class="f"><label>Work Email</label><input type="email" name="email" required></div>
+    <div class="sub">A temporary password will be created and shown after saving.</div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn ghost" type="button" onclick="document.getElementById('addDlg').close()">Cancel</button>
+      <button class="btn pri" type="submit">Create User</button>
+    </div>
+  </form>
+</dialog>
+<%- include('partials/bottom') %>

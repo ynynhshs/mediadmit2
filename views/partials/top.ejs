@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= typeof title !== 'undefined' ? title + ' · ' : '' %>MediAdmit</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<%
+  const nav = [
+    ['Dashboard', '/', null],
+    ['Registration', '/patients/register', 'registerPatients'],
+    ['Patients', '/patients', null],
+    ['Assessments', '/assessments', null],
+    ['Admissions', '/admissions', null],
+    ['Reports', '/reports', 'generateReports'],
+    ['Users', '/users', 'manageUsers'],
+    ['Audit Trail', '/audit', 'viewAudit'],
+  ];
+%>
+<header class="top">
+  <a class="brand" href="/"><div class="m"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="#fff"/></svg></div><div>MediAdmit<small>Patient Registration, Assessment &amp; Admission</small></div></a>
+  <nav class="tabs">
+    <% nav.forEach(([label, href, perm]) => { if (perm && !can(perm)) return; %>
+      <a href="<%= href %>" class="<%= title === label ? 'on' : '' %>"><%= label %></a>
+    <% }) %>
+  </nav>
+  <div class="right">
+    <a href="/account" title="My Account (change email or password)" style="display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none">
+      <div class="av"><%= currentUser.initials %></div>
+      <div><b style="color:#1d2140"><%= currentUser.firstName[0] %>. <%= currentUser.lastName %></b><br><%= currentUser.role %> · <span style="color:var(--primary)">My Account</span></div>
+    </a>
+    <a class="logout" href="/logout">Log out</a>
+  </div>
+</header>
+<main class="wrap">
+<% if (flash) { %><div class="flash <%= flash.type %>"><%= flash.text %></div><% } %>

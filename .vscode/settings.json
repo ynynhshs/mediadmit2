@@ -1,0 +1,5 @@
+{
+  "files.associations": { "*.ejs": "html" },
+  "editor.tabSize": 2,
+  "emmet.includeLanguages": { "ejs": "html" }
+}

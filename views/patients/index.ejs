@@ -1,0 +1,106 @@
+<%- include('../partials/top') %>
+<%
+  const qs = (extra) => {
+    const p = new URLSearchParams({ q, status, insurance, ...extra });
+    for (const [k, v] of [...p]) if (!v) p.delete(k);
+    return '?' + p.toString();
+  };
+%>
+<div class="head">
+  <div><div class="crumb">Patient Information</div><h1>Patients</h1></div>
+  <div class="acts">
+    <% if (can('generateReports')) { %><a class="btn ghost" href="/reports?type=patients">Export</a><% } %>
+    <% if (can('registerPatients')) { %><a class="btn pri" href="/patients/register">+ Register Patient</a><% } %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1;min-width:0">
+    <form class="filters" method="get">
+      <input class="search" name="q" value="<%= q %>" placeholder="Search by name, Patient ID or contact no…">
+      <select class="drop" name="status" data-autosubmit>
+        <option value="">Status: All</option>
+        <% statuses.forEach(s => { %><option <%= status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+      </select>
+      <select class="drop" name="insurance" data-autosubmit>
+        <option value="">Insurance: All</option>
+        <% ['PhilHealth','Maxicare','Intellicare','Medicard','None'].forEach(i => { %><option <%= insurance === i ? 'selected' : '' %>><%= i %></option><% }) %>
+      </select>
+      <button class="btn ghost" type="submit">Search</button>
+    </form>
+
+    <div class="tablewrap">
+    <table>
+      <tr><th>Patient ID</th><th>Patient</th><th>Contact No.</th><th>Blood</th><th>Insurance</th><th>Registered</th><th>Status</th></tr>
+      <% patients.forEach(p => { %>
+        <tr data-href="/patients<%= qs({ id: p._id, page }) %>" class="<%= selected && selected._id.equals(p._id) ? 'sel' : '' %>">
+          <td class="mono"><%= p.patientId %></td>
+          <td><div class="who"><div class="av"><%= p.initials %></div><div><%= p.fullName %><small><%= p.sex[0] %> · <%= p.age %></small></div></div></td>
+          <td><%= p.contactNo || '—' %></td>
+          <td><%= p.medical.bloodType || '—' %></td>
+          <td><%= p.insurance.provider || 'None' %></td>
+          <td><%= fmt.date(p.createdAt) %></td>
+          <td><span class="tag <%= fmt.tagClass(p.status) %>"><%= p.status %></span></td>
+        </tr>
+      <% }) %>
+    </table>
+    </div>
+    <% if (!patients.length) { %><div class="empty"><%= (q || status || insurance) ? 'No patients match your search.' : 'No patients yet.' %><% if (!(q || status || insurance) && can('registerPatients')) { %><br><a class="a" href="/patients/register">Register your first patient →</a><% } %></div><% } %>
+
+    <div class="pag">
+      <span>Showing <%= total ? (page - 1) * 10 + 1 : 0 %>–<%= Math.min(page * 10, total) %> of <%= total %> patients</span>
+      <div class="pg">
+        <% if (page > 1) { %><a href="<%= qs({ page: page - 1 }) %>">‹</a><% } %>
+        <% for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) { %>
+          <a class="<%= i === page ? 'on' : '' %>" href="<%= qs({ page: i }) %>"><%= i %></a>
+        <% } %>
+        <% if (page < pages) { %><a href="<%= qs({ page: page + 1 }) %>">›</a><% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (selected) { const p = selected; %>
+  <div class="card" style="width:380px">
+    <h3>Patient Profile <% if (can('editPatients')) { %><a class="link" href="/patients/<%= p._id %>/edit">Edit record</a><% } %></h3>
+    <div style="display:flex;gap:14px;align-items:center;padding-bottom:16px;border-bottom:1px solid #eef0f7;margin-bottom:16px">
+      <div style="width:62px;height:62px;border-radius:14px;background:#eef0ff;display:grid;place-items:center;flex:none"><svg width="32" height="32" viewBox="0 0 24 24" fill="#8b85ff"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.8-4.4 4.2-7 8.5-7s7.7 2.6 8.5 7z"/></svg></div>
+      <div><b style="font-size:17px"><%= p.fullName %></b><div class="mono" style="font-size:13px;margin-top:4px"><%= p.patientId %></div>
+        <span class="tag <%= fmt.tagClass(p.status) %>" style="margin-top:6px"><%= p.status %></span></div>
+    </div>
+    <div class="kv">
+      <div>Birthdate<b><%= fmt.date(p.birthDate) %> (<%= p.age %>)</b></div><div>Sex / Status<b><%= p.sex %> · <%= p.civilStatus %></b></div>
+      <div>Address<b><%= [p.address, p.city].filter(Boolean).join(', ') || '—' %></b></div><div>Blood Type<b><%= p.medical.bloodType || '—' %></b></div>
+      <div>Mobile<b><%= p.contactNo || '—' %></b></div><div>Email<b style="word-break:break-all"><%= p.email || '—' %></b></div>
+      <div>Emergency Contact<b><%= p.emergencyContact.name || '—' %></b></div><div>Relationship<b><%= p.emergencyContact.relationship || '—' %><%= p.emergencyContact.contactNo ? ' · ' + p.emergencyContact.contactNo : '' %></b></div>
+    </div>
+    <div style="margin:18px 0 10px;font-size:13px;font-weight:700">Medical History</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <% (p.medical.allergies || '').split(',').map(s => s.trim()).filter(Boolean).forEach(a => { %><span class="tag r">Allergy: <%= a %></span><% }) %>
+      <% if (p.medical.conditions) { %><span class="tag y"><%= p.medical.conditions %></span><% } %>
+      <% if (p.medical.medications) { %><span class="tag b"><%= p.medical.medications %></span><% } %>
+      <span class="tag s"><%= p.medical.smoker ? 'Smoker' : 'Non-smoker' %></span>
+    </div>
+    <div style="margin:18px 0 10px;font-size:13px;font-weight:700">Latest Assessment</div>
+    <% if (lastAssessment) { const la = lastAssessment; %>
+      <a class="who" href="/assessments/<%= la._id %>" style="display:flex"><div><%= la.chiefComplaint %><small><%= fmt.dateTime(la.assessedAt) %> · <%= la.impression %></small></div>
+        <span class="tag <%= fmt.tagClass(la.triageLevel) %>" style="margin-left:auto"><%= la.triageLevel %></span></a>
+    <% } else { %><div class="sub">Not assessed yet.</div><% } %>
+    <div style="margin:18px 0 10px;font-size:13px;font-weight:700">Insurance</div>
+    <div class="kv"><div>Provider<b><%= p.insurance.provider || 'None' %></b></div><div>Member PIN<b><%= p.insurance.memberNo || '—' %></b></div></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <a class="btn ghost" style="flex:1" href="/patients/<%= p._id %>/history">View History</a>
+      <% if (can('assessPatients')) { %><a class="btn ghost" style="flex:1" href="/assessments/new?patient=<%= p._id %>">Assess</a><% } %>
+      <% if (can('admitDischarge') && p.status !== 'Admitted') { %>
+        <a class="btn pri" style="flex:1" href="/admissions/new?patient=<%= p._id %>">Admit</a>
+      <% } %>
+    </div>
+    <% if (can('editPatients') && !selectedHasAdmissions) { %>
+      <form method="post" action="/patients/<%= p._id %>/delete" data-confirm="Delete the record of <%= p.fullName %> (<%= p.patientId %>)? This cannot be undone." style="margin-top:10px">
+        <button class="btn danger" style="width:100%" type="submit">Delete patient record</button>
+        <div class="sub" style="margin-top:6px;text-align:center">Only possible while the patient has no assessments or admissions.</div>
+      </form>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/bottom') %>

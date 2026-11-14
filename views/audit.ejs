@@ -1,0 +1,62 @@
+<%- include('partials/top') %>
+<%
+  const qs = (extra) => {
+    const p = new URLSearchParams({ ...query, ...extra });
+    for (const [k, v] of [...p]) if (!v) p.delete(k);
+    return '?' + p.toString();
+  };
+%>
+<div class="head">
+  <div><div class="crumb">Audit Trail</div><h1>Audit Trail</h1></div>
+  <div class="acts">
+    <button class="btn ghost" onclick="window.print()">⎙ Print Log</button>
+    <a class="btn pri" href="/audit/export.csv<%= qs({ page: '' }) %>">Export CSV</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card stat"><%- fmt.icon('#eef0ff','#4f46e5','doc') %><div><div class="l">Actions Today</div><div class="n"><%= stats.actionsToday %></div><div class="nt">All modules</div></div></div>
+  <div class="card stat"><%- fmt.icon('#dcfce7','#16a34a','user') %><div><div class="l">Active Users Today</div><div class="n"><%= stats.activeUsers %></div><div class="nt">of <%= stats.totalUsers %> accounts</div></div></div>
+  <div class="card stat"><%- fmt.icon('#fef3c7','#d97706','clock') %><div><div class="l">Record Changes Today</div><div class="n"><%= stats.changes %></div><div class="nt">Create / Update / Delete</div></div></div>
+  <div class="card stat"><%- fmt.icon('#fee2e2','#dc2626','shield') %><div><div class="l">Security Alerts Today</div><div class="n"><%= stats.alerts %></div><div class="<%= stats.alerts ? 'dn' : 'up' %>">Failed login attempts</div></div></div>
+</div>
+
+<div class="card">
+  <form class="filters" method="get">
+    <input class="search" name="q" value="<%= query.q || '' %>" placeholder="Search action, record or user…" style="max-width:300px">
+    <select class="drop" name="user" data-autosubmit><option value="">User: All</option>
+      <% users.forEach(u => { %><option value="<%= u._id %>" <%= query.user === String(u._id) ? 'selected' : '' %>><%= u.fullName %></option><% }) %></select>
+    <select class="drop" name="action" data-autosubmit><option value="">Action: All</option>
+      <% ACTIONS.forEach(a => { %><option <%= query.action === a ? 'selected' : '' %>><%= a %></option><% }) %></select>
+    <select class="drop" name="module" data-autosubmit><option value="">Module: All</option>
+      <% MODULES.forEach(m => { %><option <%= query.module === m ? 'selected' : '' %>><%= m %></option><% }) %></select>
+    <input class="input" type="date" name="from" value="<%= query.from || '' %>"><span class="sub">to</span><input class="input" type="date" name="to" value="<%= query.to || '' %>">
+    <button class="btn ghost" type="submit">Filter</button>
+    <% if (Object.values(query).some(Boolean)) { %><a class="a" href="/audit">Clear</a><% } %>
+  </form>
+
+  <div class="tablewrap"><table>
+    <tr><th>Date &amp; Time</th><th>User</th><th>Action</th><th>Module</th><th>Details</th><th>IP Address</th></tr>
+    <% logs.forEach(l => { %>
+      <tr>
+        <td style="color:#5b6085"><%= fmt.fullDateTime(l.createdAt) %></td>
+        <td><div class="who"><div class="av"><%= fmt.initials(l.userName) %></div><div><%= l.userName %><small><%= l.role %></small></div></div></td>
+        <td><span class="tag <%= fmt.tagClass(l.action) %>"><%= l.action %></span></td>
+        <td><%= l.module %></td>
+        <td style="white-space:normal;min-width:260px"><%= l.details %></td>
+        <td class="mono" style="color:#8a8fb0;font-weight:500"><%= l.ip || '—' %></td>
+      </tr>
+    <% }) %>
+  </table></div>
+  <% if (!logs.length) { %><div class="empty">No activity found.</div><% } %>
+
+  <div class="pag">
+    <span>Showing <%= total ? (page - 1) * 15 + 1 : 0 %>–<%= Math.min(page * 15, total) %> of <%= total %> entries</span>
+    <div class="pg">
+      <% if (page > 1) { %><a href="<%= qs({ page: page - 1 }) %>">‹</a><% } %>
+      <% for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) { %><a class="<%= i === page ? 'on' : '' %>" href="<%= qs({ page: i }) %>"><%= i %></a><% } %>
+      <% if (page < pages) { %><a href="<%= qs({ page: page + 1 }) %>">›</a><% } %>
+    </div>
+  </div>
+</div>
+<%- include('partials/bottom') %>

@@ -1,0 +1,66 @@
+<%- include('../partials/top') %>
+<%
+  const qs = (extra) => {
+    const p = new URLSearchParams({ q, triage, recommendation, ...extra });
+    for (const [k, val] of [...p]) if (!val) p.delete(k);
+    return '?' + p.toString();
+  };
+%>
+<div class="head">
+  <div><div class="crumb">Patient Assessment</div><h1>Assessments</h1></div>
+  <div class="acts">
+    <% if (can('generateReports')) { %><a class="btn ghost" href="/reports?type=assessments">Print List</a><% } %>
+    <% if (can('assessPatients')) { %><a class="btn pri" href="/assessments/new">+ New Assessment</a><% } %>
+  </div>
+</div>
+
+<div class="row">
+  <a class="card stat" href="/assessments"><%- fmt.icon('#eef0ff','#4f46e5','pulse') %><div><div class="l">Assessed Today</div><div class="n"><%= stats.assessedToday %></div><div class="nt">Patients assessed since midnight</div></div></a>
+  <a class="card stat" href="?triage=Emergency"><%- fmt.icon('#fee2e2','#dc2626','alert') %><div><div class="l">Emergency Today</div><div class="n"><%= stats.emergencyToday %></div><div class="<%= stats.emergencyToday ? 'dn' : 'up' %>"><%= stats.emergencyToday ? 'Need immediate care' : 'None today' %></div></div></a>
+  <a class="card stat" href="?recommendation=For+Admission"><%- fmt.icon('#fef3c7','#d97706','clock') %><div><div class="l">Awaiting Admission</div><div class="n"><%= stats.waiting %></div><div class="nt">Recommended for admission</div></div></a>
+  <a class="card stat" href="/assessments"><%- fmt.icon('#e0e7ff','#4338ca','doc') %><div><div class="l">Assessed This Month</div><div class="n"><%= stats.thisMonth %></div><div class="nt"><%= new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) %></div></div></a>
+</div>
+
+<div class="card">
+  <form class="filters" method="get">
+    <div class="seg">
+      <a class="<%= !triage ? 'on' : '' %>" href="<%= qs({ triage: '' }) %>">All</a>
+      <% TRIAGE.forEach(t => { %><a class="<%= triage === t ? 'on' : '' %>" href="<%= qs({ triage: t }) %>"><%= t %></a><% }) %>
+    </div>
+    <input type="hidden" name="triage" value="<%= triage %>">
+    <input class="search" name="q" value="<%= q %>" placeholder="Search patient, complaint or diagnosis…">
+    <select class="drop" name="recommendation" data-autosubmit>
+      <option value="">Recommendation: All</option>
+      <% RECOMMENDATIONS.forEach(r => { %><option <%= recommendation === r ? 'selected' : '' %>><%= r %></option><% }) %>
+    </select>
+    <button class="btn ghost" type="submit">Search</button>
+  </form>
+
+  <div class="tablewrap"><table>
+    <tr><th>Assessment No.</th><th>Patient</th><th>Chief Complaint</th><th>BP</th><th>Temp</th><th>Triage</th><th>Impression</th><th>Recommendation</th><th>Date &amp; Time</th></tr>
+    <% assessments.forEach(a => { const p = a.patient; const v = a.vitals || {}; const fl = a.flags(); %>
+      <tr data-href="/assessments/<%= a._id %>" title="Open assessment">
+        <td class="mono"><%= a.assessmentNo %></td>
+        <td><div class="who"><div class="av"><%= p.initials %></div><div><%= p.fullName %><small><%= p.patientId %></small></div></div></td>
+        <td><%= a.chiefComplaint %></td>
+        <td class="<%= fl.bp ? 'bad' : '' %>"><%= v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic || '—'}` : '—' %></td>
+        <td class="<%= fl.temperature ? 'bad' : '' %>"><%= v.temperature != null ? v.temperature + ' °C' : '—' %></td>
+        <td><span class="tag <%= fmt.tagClass(a.triageLevel) %>"><%= a.triageLevel %></span></td>
+        <td><%= a.impression %></td>
+        <td><span class="tag <%= fmt.tagClass(a.recommendation) %>"><%= a.recommendation %></span></td>
+        <td><%= fmt.dateTime(a.assessedAt) %></td>
+      </tr>
+    <% }) %>
+  </table></div>
+  <% if (!assessments.length) { %><div class="empty"><%= (q || triage || recommendation) ? 'No assessments match your search.' : 'No assessments yet.' %><% if (!(q || triage || recommendation) && can('assessPatients')) { %><br><a class="a" href="/assessments/new">Assess your first patient →</a><% } %></div><% } %>
+
+  <div class="pag">
+    <span>Showing <%= total ? (page - 1) * 10 + 1 : 0 %>–<%= Math.min(page * 10, total) %> of <%= total %> assessments</span>
+    <div class="pg">
+      <% if (page > 1) { %><a href="<%= qs({ page: page - 1 }) %>">‹</a><% } %>
+      <% for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) { %><a class="<%= i === page ? 'on' : '' %>" href="<%= qs({ page: i }) %>"><%= i %></a><% } %>
+      <% if (page < pages) { %><a href="<%= qs({ page: page + 1 }) %>">›</a><% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

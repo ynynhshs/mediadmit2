@@ -1,0 +1,94 @@
+<%- include('../partials/top') %>
+<%
+  const p = a.patient; const v = a.vitals || {}; const fl = a.flags();
+  const val = (x, unit) => x == null ? '—' : `${x}${unit}`;
+  const vital = (label, text, bad) => `<div class="vital ${bad ? 'bad' : ''}"><span>${label}</span><b>${text}</b>${bad ? '<small>Outside normal range</small>' : ''}</div>`;
+%>
+<div class="head">
+  <div><div class="crumb"><a href="/assessments">Assessments</a> › <%= a.assessmentNo %></div>
+    <h1>Patient Assessment <span class="mono" style="font-size:16px"><%= a.assessmentNo %></span></h1></div>
+  <div class="acts noprint">
+    <button class="btn ghost" type="button" onclick="window.print()">⎙ Print</button>
+    <% if (can('assessPatients')) { %><a class="btn ghost" href="/assessments/<%= a._id %>/edit">Edit</a><% } %>
+    <% if (!admission && a.recommendation === 'For Admission' && p.status !== 'Admitted' && can('admitDischarge')) { %>
+      <a class="btn pri" href="/admissions/new?patient=<%= p._id %>&assessment=<%= a._id %>">Admit Patient</a><% } %>
+  </div>
+</div>
+<div class="printhead"><h2>MediAdmit — Patient Assessment Record</h2></div>
+
+<div class="row" style="align-items:flex-start">
+  <div style="flex:1;display:flex;flex-direction:column;gap:18px;min-width:0">
+    <div class="card">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <a class="who" href="/patients?id=<%= p._id %>"><div class="av"><%= p.initials %></div><div><b style="font-size:16px"><%= p.fullName %></b><small><%= p.patientId %> · <%= p.sex %>, <%= p.age %> years</small></div></a>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="tag <%= fmt.tagClass(a.triageLevel) %>" style="font-size:13px;padding:6px 14px">Triage: <%= a.triageLevel %></span>
+          <span class="tag <%= fmt.tagClass(a.recommendation) %>" style="font-size:13px;padding:6px 14px"><%= a.recommendation %></span>
+        </div>
+      </div>
+      <div class="kv" style="grid-template-columns:repeat(4,1fr);margin-top:16px">
+        <div>Date &amp; Time<b><%= fmt.date(a.assessedAt) %> · <%= fmt.time(a.assessedAt) %></b></div>
+        <div>Assessed by<b><%= a.assessorName || '—' %></b></div>
+        <div>Blood Type<b><%= p.medical.bloodType || '—' %></b></div>
+        <div>Allergies<b><%= p.medical.allergies || 'None recorded' %></b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">Chief Complaint and History</div>
+      <p style="font-size:15px;font-weight:600"><%= a.chiefComplaint %></p>
+      <p class="sub" style="margin-top:8px;line-height:1.6;white-space:pre-line"><%= a.historyOfIllness || 'No history recorded.' %></p>
+    </div>
+
+    <div class="card">
+      <div class="sec">Vital Signs</div>
+      <div class="vitals">
+        <%- vital('Blood Pressure', v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic || '—'} mmHg` : '—', fl.bp) %>
+        <%- vital('Heart Rate', val(v.heartRate, ' bpm'), fl.heartRate) %>
+        <%- vital('Respiratory Rate', val(v.respiratoryRate, ' /min'), fl.respiratoryRate) %>
+        <%- vital('Temperature', val(v.temperature, ' °C'), fl.temperature) %>
+        <%- vital('Oxygen Saturation', val(v.spo2, ' %'), fl.spo2) %>
+        <%- vital('Pain Score', a.painScore == null ? '—' : `${a.painScore} / 10`, fl.pain) %>
+        <%- vital('Weight / Height', `${val(v.weightKg, ' kg')} · ${val(v.heightCm, ' cm')}`, false) %>
+        <%- vital('BMI', a.bmi == null ? '—' : String(a.bmi), false) %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">Physical Assessment</div>
+      <div class="kv" style="grid-template-columns:1fr 2fr">
+        <div>Level of Consciousness<b><%= a.consciousness %></b></div>
+        <div>Physical Examination<b style="white-space:pre-line"><%= a.physicalExam || '—' %></b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec">Assessment and Plan</div>
+      <div class="kv" style="grid-template-columns:1fr 1fr">
+        <div>Initial Impression / Diagnosis<b><%= a.impression %></b></div>
+        <div>Recommendation<b><%= a.recommendation %></b></div>
+        <div style="grid-column:span 2">Plan / Orders<b style="white-space:pre-line"><%= a.plan || '—' %></b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col noprint" style="width:320px">
+    <div class="card"><h3>Admission</h3>
+      <% if (admission) { %>
+        <div class="kv" style="grid-template-columns:1fr"><div>Admission No.<b class="mono"><%= admission.admissionNo %></b></div>
+          <div>Admitted<b><%= fmt.dateTime(admission.admittedAt) %></b></div><div>Status<b><%= admission.status %></b></div></div>
+        <a class="btn ghost" style="width:100%;margin-top:14px" href="/patients/<%= p._id %>/history">View patient history</a>
+      <% } else if (a.recommendation === 'For Admission') { %>
+        <div class="sub" style="line-height:1.6">This patient is recommended <b>for admission</b> but has not been admitted from this assessment yet.</div>
+        <% if (p.status !== 'Admitted' && can('admitDischarge')) { %><a class="btn pri" style="width:100%;margin-top:14px" href="/admissions/new?patient=<%= p._id %>&assessment=<%= a._id %>">Admit Patient</a><% } %>
+      <% } else { %><div class="sub">Not recommended for admission.</div><% } %>
+    </div>
+    <div class="card"><h3>Previous Assessments <small><%= history.length %></small></h3>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <% history.forEach(h => { %><a class="who" href="/assessments/<%= h._id %>"><div class="av" style="font-size:10px"><%= h.triageLevel[0] %></div><div><%= h.chiefComplaint %><small><%= fmt.dateTime(h.assessedAt) %> · <%= h.triageLevel %></small></div></a><% }) %>
+        <% if (!history.length) { %><div class="sub">This is the patient's first assessment.</div><% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

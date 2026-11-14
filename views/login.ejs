@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log In · MediAdmit</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="auth">
+<%- include('partials/hero', { heroTitle: 'Faster registration.<br>Accurate records.', heroText: 'Sign in to register patients, record assessments and manage hospital admissions from one secure web system.' }) %>
+<section class="formside">
+  <div class="box">
+    <h1>Welcome back</h1>
+    <div class="sub">Sign in to your MediAdmit staff account</div>
+    <form class="fs" method="post" action="/login">
+      <% if (typeof success !== 'undefined' && success) { %><div class="flash ok"><%= success %></div><% } %>
+      <% if (error) { %><div class="flash err"><%= error %></div><% } %>
+      <div class="f"><label for="login">Employee ID or Email</label><input id="login" name="login" value="<%= email %>" required autofocus></div>
+      <div class="f">
+        <label for="password">Password <a href="#" style="float:right;font-size:12px;color:#8a8fb0;font-weight:600;text-decoration:none" onclick="const p=document.getElementById('password');p.type=p.type==='password'?'text':'password';return false;">Show</a></label>
+        <input id="password" name="password" type="password" required>
+      </div>
+      <div class="chk"><label><input type="checkbox" name="remember">Remember me</label><a class="a" href="/forgot-password">Forgot password?</a></div>
+      <button class="btn pri big" type="submit">Sign In</button>
+      <div class="alt">New staff member? <a class="a" href="/signup">Create an account</a></div>
+      <div class="info">🔒 Access is restricted to authorized hospital personnel. All sign-ins are recorded in the Audit Trail.</div>
+    </form>
+  </div>
+</section>
+</body>
+</html>

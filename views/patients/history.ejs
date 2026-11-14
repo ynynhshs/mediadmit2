@@ -1,0 +1,31 @@
+<%- include('../partials/top') %>
+<div class="head">
+  <div><div class="crumb"><a href="/patients?id=<%= patient._id %>">Patients</a> › Patient History</div>
+    <h1><%= patient.fullName %> <span class="mono" style="font-size:16px"><%= patient.patientId %></span></h1></div>
+  <div class="acts noprint"><button class="btn ghost" onclick="window.print()">⎙ Print</button><a class="btn ghost" href="/patients?id=<%= patient._id %>">← Back to profile</a></div>
+</div>
+<div class="printhead"><h2>MediAdmit — Patient History</h2></div>
+<div class="card">
+  <h3>Assessment History <span class="sub"><%= assessments.length %> record(s)</span></h3>
+  <div class="tablewrap"><table>
+    <tr><th>Assessment No.</th><th>Date &amp; Time</th><th>Chief Complaint</th><th>Impression</th><th>Triage</th><th>Recommendation</th><th>Assessed by</th></tr>
+    <% assessments.forEach(a => { %>
+      <tr data-href="/assessments/<%= a._id %>"><td class="mono"><%= a.assessmentNo %></td><td><%= fmt.dateTime(a.assessedAt) %></td><td><%= a.chiefComplaint %></td><td><%= a.impression %></td>
+        <td><span class="tag <%= fmt.tagClass(a.triageLevel) %>"><%= a.triageLevel %></span></td><td><%= a.recommendation %></td><td><%= a.assessorName || '—' %></td></tr>
+    <% }) %>
+  </table></div>
+  <% if (!assessments.length) { %><div class="empty">This patient has no assessments yet.</div><% } %>
+</div>
+<div class="card">
+  <h3>Admission History <span class="sub"><%= admissions.length %> record(s)</span></h3>
+  <div class="tablewrap"><table>
+    <tr><th>Admission No.</th><th>Admitted</th><th>Physician</th><th>Reason</th><th>Assessment</th><th>Discharged</th><th>Status</th></tr>
+    <% admissions.forEach(a => { %>
+      <tr><td class="mono"><%= a.admissionNo %></td><td><%= fmt.dateTime(a.admittedAt) %></td><td><%= a.physician %></td><td><%= a.reason %></td>
+        <td class="mono"><%= a.assessment ? a.assessment.assessmentNo : '—' %></td><td><%= a.dischargedAt ? fmt.dateTime(a.dischargedAt) : '—' %></td>
+        <td><span class="tag <%= fmt.tagClass(a.status) %>"><%= a.status %></span></td></tr>
+    <% }) %>
+  </table></div>
+  <% if (!admissions.length) { %><div class="empty">This patient has no admissions yet.</div><% } %>
+</div>
+<%- include('../partials/bottom') %>

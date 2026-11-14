@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forgot Password · MediAdmit</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="auth">
+<%- include('partials/hero', { heroTitle: 'Forgot your<br>password?', heroText: 'Send a reset request to your administrator. They will give you a temporary password, and you can then choose a new one on My Account.' }) %>
+<section class="formside">
+  <div class="box">
+    <h1>Reset password</h1>
+    <div class="sub">Enter the email or Employee ID you sign in with</div>
+    <form class="fs" method="post" action="/forgot-password">
+      <% if (sent) { %>
+        <div class="flash ok">Your request was sent. Please ask your administrator for your temporary password. It will appear for them on the <b>Users</b> page.</div>
+      <% } %>
+      <div class="f"><label for="login">Employee ID or Email</label><input id="login" name="login" required autofocus></div>
+      <button class="btn pri big" type="submit">Send Reset Request</button>
+      <div class="alt"><a class="a" href="/login">← Back to sign in</a></div>
+    </form>
+  </div>
+</section>
+</body>
+</html>

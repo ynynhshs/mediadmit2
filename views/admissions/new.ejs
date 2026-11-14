@@ -1,0 +1,60 @@
+<%- include('../partials/top') %>
+<% const fv = (k, d) => form[k] !== undefined ? form[k] : d; %>
+<div class="head">
+  <div><div class="crumb">Admissions › New Admission</div><h1>Admit Patient</h1></div>
+  <div class="acts">
+    <% if (can('assessPatients')) { %><a class="btn ghost" href="/assessments/new<%= selectedPatient ? '?patient=' + selectedPatient : '' %>">Assess patient first</a><% } %>
+    <% if (can('registerPatients')) { %><a class="btn ghost" href="/patients/register">+ Register a new patient</a><% } %>
+  </div>
+</div>
+<% if (error) { %><div class="flash err"><%= error %></div><% } %>
+
+<form method="post" action="/admissions/new" class="row" style="align-items:flex-start">
+  <% if (assessment) { %><input type="hidden" name="assessment" value="<%= assessment._id %>"><% } %>
+  <div class="card" style="flex:1">
+    <div class="sec">Admission Details</div>
+    <div class="grid4">
+      <div class="f s4"><label>Patient <em>*</em></label>
+        <select name="patient" required onchange="location='/admissions/new?patient='+this.value">
+          <option value="">Select a registered patient…</option>
+          <% patients.forEach(p => { %>
+            <option value="<%= p._id %>" <%= String(p._id) === selectedPatient ? 'selected' : '' %>><%= p.patientId %> — <%= p.fullName %> (<%= p.sex[0] %>, <%= p.age %>)</option>
+          <% }) %>
+        </select>
+        <% if (!patients.length) { %><div class="flash err" style="margin-top:8px">There are no patients to admit yet. <a class="a" href="/patients/register">Register a patient first →</a></div>
+        <% } else { %><div class="sub" style="margin-top:6px">Only patients who are not currently admitted are listed.</div><% } %>
+      </div>
+      <div class="f s2"><label>Admitting Physician <em>*</em></label><input name="physician" value="<%= fv('physician', assessment && / \(Physician\)$/.test(assessment.assessorName) ? 'Dr. ' + assessment.assessorName.replace(/ \(Physician\)$/, '') : '') %>" placeholder="e.g. Dr. R. Villanueva" required></div>
+      <div class="f s2"><label>Reason for Admission <em>*</em></label><input name="reason" value="<%= fv('reason', assessment ? assessment.impression : '') %>" placeholder="e.g. Pneumonia" required></div>
+      <div class="f s4"><label>Notes</label><textarea name="notes" rows="3"><%= fv('notes', assessment && assessment.plan ? 'Plan from assessment: ' + assessment.plan : '') %></textarea></div>
+    </div>
+    <div class="info" style="margin-bottom:16px">The Admission No. (ADM-YY-NNNN) is created automatically. The date and time of admission are saved when you confirm.</div>
+    <div style="display:flex;justify-content:flex-end;gap:12px">
+      <a class="btn ghost" href="/admissions">Cancel</a>
+      <button class="btn pri" type="submit">Confirm Admission</button>
+    </div>
+  </div>
+
+  <div class="card" style="width:380px">
+    <h3>Patient Assessment <% if (assessment) { %><a class="link" href="/assessments/<%= assessment._id %>">Open</a><% } %></h3>
+    <% if (assessment) { const v = assessment.vitals || {}; %>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="tag <%= fmt.tagClass(assessment.triageLevel) %>"><%= assessment.triageLevel %></span>
+        <span class="tag <%= fmt.tagClass(assessment.recommendation) %>"><%= assessment.recommendation %></span>
+      </div>
+      <div class="kv" style="grid-template-columns:1fr 1fr">
+        <div>Assessment No.<b class="mono"><%= assessment.assessmentNo %></b></div><div>Assessed<b><%= fmt.dateTime(assessment.assessedAt) %></b></div>
+        <div style="grid-column:span 2">Chief Complaint<b><%= assessment.chiefComplaint %></b></div>
+        <div style="grid-column:span 2">Impression<b><%= assessment.impression %></b></div>
+        <div>Blood Pressure<b><%= v.bpSystolic ? `${v.bpSystolic}/${v.bpDiastolic || '—'}` : '—' %></b></div><div>Temperature<b><%= v.temperature != null ? v.temperature + ' °C' : '—' %></b></div>
+        <div>Heart Rate<b><%= v.heartRate != null ? v.heartRate + ' bpm' : '—' %></b></div><div>SpO₂<b><%= v.spo2 != null ? v.spo2 + ' %' : '—' %></b></div>
+      </div>
+      <div class="sub" style="margin-top:12px">This assessment will be linked to the admission.</div>
+    <% } else if (selectedPatient) { %>
+      <div class="warnbox">No assessment in the last 3 days for this patient.</div>
+      <div class="sub" style="margin:10px 0">Patients are normally assessed before admission. You can still admit without one.</div>
+      <% if (can('assessPatients')) { %><a class="btn ghost" style="width:100%" href="/assessments/new?patient=<%= selectedPatient %>">Assess this patient</a><% } %>
+    <% } else { %><div class="sub">Select a patient to see their latest assessment.</div><% } %>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

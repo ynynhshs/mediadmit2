@@ -1,0 +1,36 @@
+<%- include('partials/top') %>
+<% const u = currentUser; const isAdmin = u.role === 'Administrator'; %>
+<div class="head">
+  <div><div class="crumb">Settings</div><h1>My Account</h1></div>
+</div>
+
+<div class="row" style="align-items:flex-start;flex-wrap:wrap">
+  <!-- PROFILE -->
+  <form class="card" method="post" action="/account/profile" style="flex:1;min-width:320px">
+    <div class="sec">Account Details</div>
+    <% if (profileError) { %><div class="flash err" style="margin-bottom:14px"><%= profileError %></div><% } %>
+    <div class="grid4" style="grid-template-columns:1fr 1fr">
+      <div class="f"><label>First Name</label><input name="firstName" value="<%= u.firstName %>" required></div>
+      <div class="f"><label>Last Name</label><input name="lastName" value="<%= u.lastName %>" required></div>
+      <div class="f" style="grid-column:span 2"><label>Email <span class="sub">(used to sign in)</span></label><input type="email" name="email" value="<%= u.email %>" required></div>
+      <div class="f"><label>Employee ID <span class="sub">(also used to sign in)</span></label>
+        <input name="employeeId" value="<%= u.employeeId %>" <%= isAdmin ? 'required' : 'disabled' %>></div>
+      <div class="f"><label>Role</label><input value="<%= u.role %>" disabled></div>
+    </div>
+    <% if (!isAdmin) { %><div class="info" style="margin-bottom:16px">Only an Administrator can change your Employee ID or role.</div><% } %>
+    <div style="display:flex;justify-content:flex-end"><button class="btn pri" type="submit">Save Details</button></div>
+  </form>
+
+  <!-- PASSWORD -->
+  <form class="card" method="post" action="/account/password" style="width:420px;max-width:100%">
+    <div class="sec">Change Password</div>
+    <% if (passwordError) { %><div class="flash err" style="margin-bottom:14px"><%= passwordError %></div><% } %>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px">
+      <div class="f"><label>Current Password</label><input type="password" name="currentPassword" autocomplete="current-password" required></div>
+      <div class="f"><label>New Password <span class="sub">(at least 8 characters)</span></label><input type="password" name="newPassword" minlength="8" autocomplete="new-password" required></div>
+      <div class="f"><label>Confirm New Password</label><input type="password" name="confirmPassword" minlength="8" autocomplete="new-password" required></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn pri" type="submit">Change Password</button></div>
+  </form>
+</div>
+<%- include('partials/bottom') %>

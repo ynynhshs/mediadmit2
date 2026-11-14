@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>First-time Setup · MediAdmit</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="auth">
+<%- include('partials/hero', { heroTitle: 'Welcome to<br>MediAdmit.', heroText: 'Your database is empty. Create the Administrator account first. You will use it to register patients, record assessments, admit patients and add your staff.' }) %>
+<section class="formside">
+  <div class="box wide">
+    <h1>First-time setup</h1>
+    <div class="sub">Create the Administrator account</div>
+    <form class="fs" method="post" action="/setup">
+      <% if (error) { %><div class="flash err"><%= error %></div><% } %>
+      <div class="grid2">
+        <div class="f"><label>First Name</label><input name="firstName" value="<%= form.firstName || '' %>" required autofocus></div>
+        <div class="f"><label>Last Name</label><input name="lastName" value="<%= form.lastName || '' %>" required></div>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>Employee ID</label><input name="employeeId" value="<%= form.employeeId || '' %>" placeholder="e.g. ADMIN-001" required></div>
+        <div class="f"><label>Email</label><input name="email" type="email" value="<%= form.email || '' %>" placeholder="you@hospital.ph" required></div>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>Password <span class="sub">(at least 8 characters)</span></label><input name="password" type="password" minlength="8" required></div>
+        <div class="f"><label>Confirm Password</label><input name="confirmPassword" type="password" minlength="8" required></div>
+      </div>
+      <div class="info">You can sign in with either the email or the Employee ID. Keep this password safe — it is the main account of the system. You can change it later on <b>My Account</b>.</div>
+      <button class="btn pri big" type="submit">Create Administrator &amp; Start</button>
+    </form>
+  </div>
+</section>
+</body>
+</html>
