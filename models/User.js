@@ -44,7 +44,7 @@ userSchema.virtual('initials').get(function () {
   return `${(this.firstName || '?')[0]}${(this.lastName || '')[0] || ''}`.toUpperCase();
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 User.ROLES = ROLES;
 User.PERMISSIONS = PERMISSIONS;
 User.ROLE_DEFAULTS = ROLE_DEFAULTS;

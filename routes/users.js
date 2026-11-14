@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const User = require('../models/User');
 
 const ROLES = ['Administrator', 'Admitting Clerk', 'Nurse', 'Physician', 'Records Officer'];
 
