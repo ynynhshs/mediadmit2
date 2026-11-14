@@ -10,6 +10,9 @@ const router = express.Router();
 const PAGE_SIZE = 10;
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const patientError = (err) => err.code === 11000 && err.keyPattern && err.keyPattern.email
+  ? 'A patient with this email address already exists.'
+  : err.message;
 
 // Turns the flat form fields into a Patient document.
 function patientFromForm(b) {
@@ -77,7 +80,7 @@ router.post('/register', requirePermission('registerPatients'), async (req, res)
     if (req.body.next === 'admit') return res.redirect(`/admissions/new?patient=${patient._id}`);
     res.redirect(`/patients?id=${patient._id}`);
   } catch (err) {
-    res.status(400).render('patients/form', { title: 'Registration', patient: null, error: err.message, form: req.body });
+    res.status(400).render('patients/form', { title: 'Registration', patient: null, error: patientError(err), form: req.body });
   }
 });
 
@@ -98,7 +101,7 @@ router.post('/:id/edit', requirePermission('editPatients'), async (req, res) => 
     req.session.flash = { type: 'ok', text: 'Patient record updated.' };
     res.redirect(`/patients?id=${patient._id}`);
   } catch (err) {
-    res.status(400).render('patients/form', { title: 'Patients', patient, error: err.message, form: req.body });
+    res.status(400).render('patients/form', { title: 'Patients', patient, error: patientError(err), form: req.body });
   }
 });
 

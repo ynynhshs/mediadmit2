@@ -12,18 +12,18 @@ const patientSchema = new mongoose.Schema({
   lastName: { type: String, required: [true, 'Last name is required'], trim: true },
   birthDate: { type: Date, required: [true, 'Birthdate is required'] },
   sex: { type: String, enum: ['Male', 'Female'], required: [true, 'Sex is required'] },
-  civilStatus: { type: String, enum: ['Single', 'Married', 'Widowed', 'Separated'], default: 'Single' },
+  civilStatus: { type: String, enum: ['Single', 'Married', 'Widowed', 'Separated'], required: true },
 
   // Contact details
-  address: { type: String, trim: true, default: '' },
-  city: { type: String, trim: true, default: '' },
+  address: { type: String, trim: true, required: [true, 'Street address is required'] },
+  city: { type: String, trim: true, required: [true, 'City or municipality is required'] },
   contactNo: { type: String, trim: true, required: [true, 'Contact number is required'] },
-  email: { type: String, trim: true, lowercase: true, default: '' },
+  email: { type: String, trim: true, lowercase: true, required: [true, 'Email address is required'] },
 
   // Emergency contact
   emergencyContact: {
     name: { type: String, trim: true, required: [true, 'Emergency contact name is required'] },
-    relationship: { type: String, trim: true, default: '' },
+    relationship: { type: String, trim: true },
     contactNo: { type: String, trim: true, required: [true, 'Emergency contact number is required'] },
   },
 
@@ -68,6 +68,10 @@ patientSchema.virtual('age').get(function () {
 
 patientSchema.index({ lastName: 1, firstName: 1 });
 patientSchema.index({ createdAt: -1 });
+patientSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { email: { $type: 'string', $gt: '' } } }
+);
 
 const Patient = mongoose.model('Patient', patientSchema);
 Patient.STATUSES = STATUSES;
