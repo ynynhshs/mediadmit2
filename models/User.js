@@ -30,13 +30,14 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, required: true, trim: true },
   employeeId: { type: String, required: true, unique: true, trim: true },
   email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+  username: { type: String, unique: true, sparse: true, trim: true },
   passwordHash: { type: String, required: true },
-  role: { type: String, enum: ROLES, required: true },
+  role: { type: String, required: true }, // 👈 MAKE SURE THERE IS NO `enum: ROLES` HERE!
   subsystems: { type: [String], default: [] },
   status: { type: String, enum: ['Pending', 'Active', 'Deactivated'], default: 'Pending' },
   permissions: { type: permissionFields, default: () => ({}) },
   lastLogin: Date,
-  resetRequestedAt: Date, // set when the user clicks "Forgot password?"
+  resetRequestedAt: Date,
 }, { timestamps: true });
 
 userSchema.virtual('fullName').get(function () { return `${this.firstName} ${this.lastName}`; });

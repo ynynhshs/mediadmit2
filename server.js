@@ -76,7 +76,10 @@ async function upgradeOldData() {
   await db.collection('patients').updateMany({ status: { $in: ['Pending Bed', 'Transferred'] } }, { $set: { status: 'Admitted' } });
   await db.collection('admit_admissions').updateMany({ status: { $in: ['Pending Bed', 'Transferred'] } }, { $set: { status: 'Admitted' } });
   await db.collection('admit_admissions').updateMany({ bed: { $exists: true } }, { $unset: { bed: '', bedLabel: '' } });
-  for (const u of await User.find({ 'permissions.assessPatients': { $exists: false } })) {
+  
+  // Only update users that belong to this subsystem (Administrator, Clerk, Nurse, etc.)
+  const validRoles = ['Administrator', 'Admitting Clerk', 'Nurse', 'Physician', 'Records Officer'];
+  for (const u of await User.find({ 'permissions.assessPatients': { $exists: false }, role: { $in: validRoles } })) {
     u.permissions.assessPatients = !!(User.ROLE_DEFAULTS[u.role] || {}).assessPatients;
     await u.save();
   }
